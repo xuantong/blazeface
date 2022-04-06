@@ -1,3 +1,7 @@
+# jetbrains
+.idea
+*.iml
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -148,3 +152,4 @@ nohup.out
 # weights
 weights/train
 blazeface/evaluator/widerface_evaluate/widerface_txt
+blazeface/utils/anchors_calculation/

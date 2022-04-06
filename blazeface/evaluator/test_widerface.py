@@ -1,8 +1,11 @@
 from __future__ import print_function
 
 import sys
-sys.path.append("/data/face_detections/blazefacev3/config")
-sys.path.append("/data/face_detections/blazefacev3/blazeface")
+import os
+
+cwd = os.getcwd()
+sys.path.append(f"${cwd}/../../config")
+sys.path.append(f"${cwd}/../../blazeface")
 
 import os
 import argparse
@@ -22,7 +25,7 @@ from utils.timer import Timer
 
 
 parser = argparse.ArgumentParser(description='Test')
-parser.add_argument('-m', '--trained_model', default='/data/face_detections/blazefacev3/weights/pretrain/Blaze_Final_640.pth',
+parser.add_argument('-m', '--trained_model', default='../../weights/pretrain/Blaze_Final_640.pth',
                     type=str, help='Trained state_dict file path to open')
 parser.add_argument('--network', default='Blaze', help='Backbone network mobile0.25 or slim or RFB')
 parser.add_argument('--origin_size', default=False, type=str, help='Whether use origin image size to evaluate')
