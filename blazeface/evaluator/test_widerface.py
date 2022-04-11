@@ -1,11 +1,8 @@
 from __future__ import print_function
 
 import sys
-import os
-
-cwd = os.getcwd()
-sys.path.append(f"${cwd}/../../config")
-sys.path.append(f"${cwd}/../../blazeface")
+sys.path.append("../../config")
+sys.path.append("../../blazeface")
 
 import os
 import argparse
@@ -23,22 +20,31 @@ from models.net_blaze import Blaze
 from utils.box_utils import decode, decode_landm
 from utils.timer import Timer
 
-
 parser = argparse.ArgumentParser(description='Test')
-parser.add_argument('-m', '--trained_model', default='../../weights/pretrain/Blaze_Final_640.pth',
+parser.add_argument('-m', '--trained_model',
+                    default='../../weights/pretrain/Blaze_Final_640.pth',
                     type=str, help='Trained state_dict file path to open')
-parser.add_argument('--network', default='Blaze', help='Backbone network mobile0.25 or slim or RFB')
-parser.add_argument('--origin_size', default=False, type=str, help='Whether use origin image size to evaluate')
-parser.add_argument('--long_side', default=320, help='when origin_size is false, long_side is scaled size(320 or 640 for long side)')
-parser.add_argument('--save_folder', default='/data/face_detections/blazefacev3/blazeface/evaluator/widerface_evaluate/widerface_txt', type=str, help='Dir to save txt results')
+parser.add_argument('--network', default='Blaze',
+                    help='Backbone network mobile0.25 or slim or RFB')
+parser.add_argument('--origin_size', default=False, type=str,
+                    help='Whether use origin image size to evaluate')
+parser.add_argument('--long_side', default=640,
+                    help='when origin_size is false, long_side is scaled size(320 or 640 for long side)')
+parser.add_argument('--save_folder', default='./widerface_evaluate/lfw/',
+                    type=str, help='Dir to save txt results')
 parser.add_argument('--cpu', action="store_true", default=False, help='Use cpu inference')
-parser.add_argument('--dataset_folder', default='/data/face_detections/face_dataset/widerface/val/images/', type=str, help='dataset path')
-parser.add_argument('--confidence_threshold', default=0.01, type=float, help='confidence_threshold')
+parser.add_argument('--dataset_folder',
+                    default='D:/Downloads/datasets/WIDER/WIDER_val/images/', type=str,
+                    help='dataset path')
+parser.add_argument('--confidence_threshold', default=0.3, type=float,
+                    help='confidence_threshold')
 parser.add_argument('--top_k', default=2000, type=int, help='top_k')
 parser.add_argument('--nms_threshold', default=0.5, type=float, help='nms_threshold')
 parser.add_argument('--keep_top_k', default=1000, type=int, help='keep_top_k')
-parser.add_argument('-s', '--save_image', action="store_true", default=False, help='show detection results')
-parser.add_argument('--vis_thres', default=0.17, type=float, help='visualization_threshold')
+parser.add_argument('-s', '--save_image', action="store_true", default=False,
+                    help='show detection results')
+parser.add_argument('--vis_thres', default=0.3, type=float,
+                    help='visualization_threshold')
 args = parser.parse_args()
 
 
@@ -65,10 +71,13 @@ def remove_prefix(state_dict, prefix):
 def load_model(model, pretrained_path, load_to_cpu):
     print('Loading pretrained model from {}'.format(pretrained_path))
     if load_to_cpu:
-        pretrained_dict = torch.load(pretrained_path, map_location=lambda storage, loc: storage)
+        pretrained_dict = torch.load(pretrained_path,
+                                     map_location=lambda storage, loc: storage)
     else:
         device = torch.cuda.current_device()
-        pretrained_dict = torch.load(pretrained_path, map_location=lambda storage, loc: storage.cuda(device))
+        pretrained_dict = torch.load(pretrained_path,
+                                     map_location=lambda storage, loc: storage.cuda(
+                                         device))
     if "state_dict" in pretrained_dict.keys():
         pretrained_dict = remove_prefix(pretrained_dict['state_dict'], 'module.')
     else:
@@ -85,16 +94,16 @@ if __name__ == '__main__':
     net = None
     if args.network == "mobile0.25":
         cfg = cfg_mnet
-        net = RetinaFace(cfg = cfg, phase = 'test')
+        net = RetinaFace(cfg=cfg, phase='test')
     elif args.network == "slim":
         cfg = cfg_slim
-        net = Slim(cfg = cfg, phase = 'test')
+        net = Slim(cfg=cfg, phase='test')
     elif args.network == "RFB":
         cfg = cfg_rfb
-        net = RFB(cfg = cfg, phase = 'test')
+        net = RFB(cfg=cfg, phase='test')
     elif args.network == "Blaze":
         cfg = cfg_blaze
-        net = Blaze(cfg = cfg, phase = 'test')
+        net = Blaze(cfg=cfg, phase='test')
     else:
         print("Don't support network!")
         exit(0)
@@ -113,6 +122,7 @@ if __name__ == '__main__':
 
     with open(testset_list, 'r') as fr:
         test_dataset = fr.read().split()
+        test_dataset = [f for f in test_dataset if f.endswith('.jpg')]
     num_images = len(test_dataset)
 
     _t = {'forward_pass': Timer(), 'misc': Timer()}
@@ -129,8 +139,8 @@ if __name__ == '__main__':
         im_shape = img.shape
         im_size_min = np.min(im_shape[0:2])
         im_size_max = np.max(im_shape[0:2])
-        
-        #blazeface resize
+
+        # blazeface resize
         height, width, _ = im_shape
         image_t = np.empty((im_size_max, im_size_max, 3), dtype=img.dtype)
         image_t[:, :] = (104, 117, 123)
@@ -138,7 +148,6 @@ if __name__ == '__main__':
         img = cv2.resize(image_t, (max_size, max_size))
         resize = float(target_size) / float(im_size_max)
 
-            
         im_height, im_width, _ = img.shape
         scale = torch.Tensor([img.shape[1], img.shape[0], img.shape[1], img.shape[0]])
         img -= (104, 117, 123)
@@ -203,7 +212,7 @@ if __name__ == '__main__':
             os.makedirs(dirname)
         with open(save_name, "w") as fd:
             bboxs = dets
-            file_name = os.path.basename(save_name)[:-4] + "\n"
+            file_name = img_name + "\n"
             bboxs_num = str(len(bboxs)) + "\n"
             fd.write(file_name)
             fd.write(bboxs_num)
@@ -213,10 +222,17 @@ if __name__ == '__main__':
                 w = int(box[2]) - int(box[0])
                 h = int(box[3]) - int(box[1])
                 confidence = str(box[4])
-                line = str(x) + " " + str(y) + " " + str(w) + " " + str(h) + " " + confidence + " \n"
+                line = str(x) + " " + str(y) + " " + str(w) + " " + str(
+                    h) + " " + confidence + " \n"
                 fd.write(line)
 
-        print('im_detect: {:d}/{:d} forward_pass_time: {:.4f}s misc: {:.4f}s'.format(i + 1, num_images, _t['forward_pass'].average_time, _t['misc'].average_time))
+        print(
+            'im_detect: {:d}/{:d} forward_pass_time: {:.4f}s misc: {:.4f}s'.format(i + 1,
+                                                                                   num_images,
+                                                                                   _t[
+                                                                                       'forward_pass'].average_time,
+                                                                                   _t[
+                                                                                       'misc'].average_time))
 
         # save image
         if args.save_image:
@@ -242,4 +258,3 @@ if __name__ == '__main__':
                 os.makedirs("./results/")
             name = "./results/" + str(i) + ".jpg"
             cv2.imwrite(name, img_raw)
-

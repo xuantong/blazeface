@@ -1,8 +1,8 @@
 from __future__ import print_function
 
 import sys
-sys.path.append("/data/face_detections/blazefacev3/config")
-sys.path.append("/data/face_detections/blazefacev3/blazeface")
+sys.path.append("../config")
+sys.path.append("../blazeface")
 
 import os
 import argparse
@@ -50,7 +50,7 @@ if __name__ == '__main__':
         print("Don't support network!")
         exit(0)
     long_side = int(args.long_side)
-    short_side = int(args.long_side/4*3)
+    short_side = int(long_side/4*3)
     img = torch.randn(1, 3, long_side, short_side)
     flops, params = profile(net, inputs=(img, ))
     

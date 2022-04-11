@@ -1,8 +1,9 @@
 from __future__ import print_function
 
 import sys
-sys.path.append("/data/face_detections/blazefacev3/config")
-sys.path.append("/data/face_detections/blazefacev3/blazeface")
+
+sys.path.append("../config")
+sys.path.append("../blazeface")
 
 import os
 import argparse
@@ -21,21 +22,30 @@ from models.net_blaze import Blaze
 from utils.box_utils import decode, decode_landm, letterbox
 from utils.timer import Timer
 
-
 parser = argparse.ArgumentParser(description='Test')
-parser.add_argument('-m', '--trained_model', default='/data/face_detections/blazefacev3/weights/pretrain/Blaze_Final_640.pth',
+parser.add_argument('-m', '--trained_model',
+                    default='../weights/pretrain/Blaze_Final_640.pth',
                     type=str, help='Trained state_dict file path to open')
-parser.add_argument('--network', default='Blaze', help='Backbone network mobile0.25 or slim or RFB')
-parser.add_argument('--origin_size', default=False, type=str, help='Whether use origin image size to evaluate')
-parser.add_argument('--long_side', default=1280, help='when origin_size is false, long_side is scaled size(320 or 640 for long side)')
-parser.add_argument('--save_folder', default='./widerface_evaluate/widerface_txt/', type=str, help='Dir to save txt results')
+parser.add_argument('--network', default='Blaze',
+                    help='Backbone network mobile0.25 or slim or RFB')
+parser.add_argument('--origin_size', default=False, type=str,
+                    help='Whether use origin image size to evaluate')
+parser.add_argument('--long_side', default=1280,
+                    help='when origin_size is false, long_side is scaled size(320 or 640 for long side)')
+parser.add_argument('--save_folder', default='./widerface_evaluate/widerface_txt/',
+                    type=str, help='Dir to save txt results')
 parser.add_argument('--cpu', action="store_true", default=False, help='Use cpu inference')
-parser.add_argument('--confidence_threshold', default=0.3, type=float, help='confidence_threshold')
+parser.add_argument('--confidence_threshold', default=0.3, type=float,
+                    help='confidence_threshold')
 parser.add_argument('--top_k', default=2000, type=int, help='top_k')
 parser.add_argument('--nms_threshold', default=0.1, type=float, help='nms_threshold')
 parser.add_argument('--keep_top_k', default=1000, type=int, help='keep_top_k')
-parser.add_argument('--save_image', action="store_true", default=True, help='show detection results')
-parser.add_argument('--vis_thres', default=0.3, type=float, help='visualization_threshold')
+parser.add_argument('--save_image', action="store_true", default=False,
+                    help='save detection results')
+parser.add_argument('--show_image', action="store_true", default=True,
+                    help='show detection results')
+parser.add_argument('--vis_thres', default=0.3, type=float,
+                    help='visualization_threshold')
 args = parser.parse_args()
 
 
@@ -62,10 +72,13 @@ def remove_prefix(state_dict, prefix):
 def load_model(model, pretrained_path, load_to_cpu):
     print('Loading pretrained model from {}'.format(pretrained_path))
     if load_to_cpu:
-        pretrained_dict = torch.load(pretrained_path, map_location=lambda storage, loc: storage)
+        pretrained_dict = torch.load(pretrained_path,
+                                     map_location=lambda storage, loc: storage)
     else:
         device = torch.cuda.current_device()
-        pretrained_dict = torch.load(pretrained_path, map_location=lambda storage, loc: storage.cuda(device))
+        pretrained_dict = torch.load(pretrained_path,
+                                     map_location=lambda storage, loc: storage.cuda(
+                                         device))
     if "state_dict" in pretrained_dict.keys():
         pretrained_dict = remove_prefix(pretrained_dict['state_dict'], 'module.')
     else:
@@ -82,16 +95,16 @@ if __name__ == '__main__':
     net = None
     if args.network == "mobile0.25":
         cfg = cfg_mnet
-        net = RetinaFace(cfg = cfg, phase = 'test')
+        net = RetinaFace(cfg=cfg, phase='test')
     elif args.network == "slim":
         cfg = cfg_slim
-        net = Slim(cfg = cfg, phase = 'test')
+        net = Slim(cfg=cfg, phase='test')
     elif args.network == "RFB":
         cfg = cfg_rfb
-        net = RFB(cfg = cfg, phase = 'test')
+        net = RFB(cfg=cfg, phase='test')
     elif args.network == "Blaze":
         cfg = cfg_blaze
-        net = Blaze(cfg = cfg, phase = 'test')
+        net = Blaze(cfg=cfg, phase='test')
     else:
         print("Don't support network!")
         exit(0)
@@ -100,27 +113,28 @@ if __name__ == '__main__':
     net.eval()
     print('Finished loading model!')
     print(net)
+    # import torchsummary
+    # torchsummary.summary(net, (3, 640, 640))
     cudnn.benchmark = True
-    device = torch.device("cpu" if args.cpu else "cuda")
+    device = torch.device("c"
+                          "pu" if args.cpu else "cuda")
     net = net.to(device)
 
     # testing begin
-    for i in range(1):
-        image_path = "/data/face_detections/blazefacev3/docs/img/sample1.jpg"
+    from pathlib import Path
 
-        img_raw = cv2.imread(image_path, cv2.IMREAD_COLOR)
+    for image_path in Path("../docs/img").glob('*.jpg'):
+        img_raw = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
         img = np.float32(img_raw)
 
         # testing scale
-        target_size = args.long_side
-        max_size = args.long_side
-
+        target_size = int(args.long_side)
         im_shape = img.shape
-        im_size_min = np.min(im_shape[0:2])
-        im_size_max = np.max(im_shape[0:2])
-        
+
         # yolo resize
-        img, ratio, (dw, dh) = letterbox(img, (target_size, target_size), color=(104, 117, 123), auto=True, scaleFill=False)
+        img, ratio, (dw, dh) = letterbox(img, (target_size, target_size),
+                                         color=(104, 117, 123), auto=True,
+                                         scaleFill=False)
         resize = np.max(ratio)
 
         im_height, im_width, _ = img.shape
@@ -179,7 +193,7 @@ if __name__ == '__main__':
         face_det_list = []
 
         # show image
-        if args.save_image:
+        if args.save_image or args.show_image:
             for b in dets:
                 if b[4] < args.vis_thres:
                     continue
@@ -202,7 +216,12 @@ if __name__ == '__main__':
             # save image
 
             print("face num:", len(face_det_list))
-            name = "test1.jpg"
-            infer_image_path = os.path.join(os.path.split(image_path)[0], name)
-            cv2.imwrite(infer_image_path, img_raw)
+            name = str(image_path).replace('.jpg', '_detect_res.jpg')
+            if args.save_image:
+                infer_image_path = os.path.join(os.path.split(image_path)[0], name)
+                cv2.imwrite(infer_image_path, img_raw)
 
+            if args.show_image:
+                cv2.imshow(name, img_raw)
+                cv2.waitKey(-1)
+                cv2.destroyAllWindows()
